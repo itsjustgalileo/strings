@@ -1,11 +1,14 @@
 #ifndef STRINGS_H_
-#define STRINGS_H_
-    
+#define STRINGS_H_ 1
+
+#include <stdlib.h>
+#include <stdbool.h>
+
 typedef struct {
     const char *str;
     size_t len;
 } StringView;
-    
+
 bool string_view_from_cstr(StringView *sv, const char *str);
 bool string_view_from_range(StringView *sv, const char *str, size_t len);
 bool string_view_from_span(StringView *sv, const char *start, const char *end);
