@@ -1,5 +1,9 @@
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+
+#include "./strings.h"
 
 /***************
  * STRING VIEW *
@@ -9,7 +13,7 @@ bool string_view_from_cstr(StringView *sv, const char *str)
 {
     assert(sv && str);
     sv->str = str;
-    sv->len = quest_strlen(str);
+    sv->len = strlen(str);
     return true;
 }
 
@@ -17,7 +21,7 @@ bool string_view_from_range(StringView *sv, const char *str, size_t len)
 {
     assert(sv && str);
     sv->str = str;
-    sv->len = quest_static_cast(size_t, len);
+    sv->len = (size_t) len;
     return true;
 }
 
@@ -28,7 +32,7 @@ bool string_view_from_span(StringView *sv, const char *start, const char *end)
         return false;
     }
     sv->str = start;
-    sv->len = quest_static_cast(size_t, end - start);
+    sv->len = (size_t)(end - start);
     return true;
 }
 
@@ -53,7 +57,7 @@ bool string_view_slice(const StringView *sv, size_t start, size_t end, StringVie
 bool string_view_starts_with(const StringView *sv, const char *prefix)
 {
     assert(sv && prefix);
-    size_t prefix_len = quest_strlen(prefix);
+    size_t prefix_len = strlen(prefix);
     if (sv->len < prefix_len) {        
         return false;
     }
@@ -67,7 +71,7 @@ bool string_view_ends_with(const StringView *sv, const char *suffix)
     if (suffix_len > sv->len) {        
         return false;
     }
-    return quest_strncmp(sv->str + (sv->len - suffix_len), suffix, suffix_len) == 0;
+    return strncmp(sv->str + (sv->len - suffix_len), suffix, suffix_len) == 0;
 }
 
 bool string_view_find(const StringView *sv, char c, size_t *index)
@@ -155,11 +159,11 @@ bool string_builder_append_char(StringBuilder *sb, char c)
 bool string_builder_append_cstr(StringBuilder *sb, const char *str)
 {
     assert(sb && str);
-    size_t str_len = quest_strlen(str);
+    size_t str_len = strlen(str);
     if (!string_builder_ensure_capacity(sb, sb->length + str_len + 1)) {
         return false;
     }
-    quest_memcpy(sb->data + sb->length, str, str_len);
+    memcpy(sb->data + sb->length, str, str_len);
     sb->length += str_len;
     sb->data[sb->length] = '\0';
     return true;
@@ -171,8 +175,46 @@ bool string_builder_append_view(StringBuilder *sb, const StringView *sv)
     if (!string_builder_ensure_capacity(sb, sb->length + sv->len + 1)) {
         return false;
     }
-    quest_memcpy(sb->data + sb->length, sv->str, sv->len);
+    memcpy(sb->data + sb->length, sv->str, sv->len);
     sb->length += sv->len;
     sb->data[sb->length] = '\0';
     return true;
+}
+
+bool string_builder_read_entire_file(StringBuilder *sb, const char *filepath)
+{
+    FILE *fp = fopen(filepath, "r");
+    if (NULL == fp) {
+        return false;  
+    }
+
+    fseek(fp, 0, SEEK_END);
+    long len = ftell(fp);
+    rewind(fp);
+
+    if (len <= 0) {
+        fclose(fp);
+        return false;
+    }
+
+    char *buffer = malloc(len + 1);
+    if (NULL == buffer) {
+        fclose(fp);
+        return false;
+    }
+
+    fread(buffer, 1, len, fp);
+    buffer[len] = '\0';
+
+    bool ok = string_builder_append_cstr(sb, buffer);
+    if (!ok) {
+        free(buffer);
+        fclose(fp);
+        return false;
+    }
+    
+    free(buffer);
+    fclose(fp);
+
+    return ok;
 }
