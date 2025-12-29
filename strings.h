@@ -1,5 +1,5 @@
 #ifndef STRINGS_H_
-#define STRINGS_H_ 1
+#define STRINGS_H_
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -14,7 +14,7 @@ extern "C" {
      *
      * Holds a pointer to a character array and its length. Does not manage memory.
      */
-    typedef struct {
+    typedef struct StringView {
         const char *str; /**< Pointer to the first character of the string */
         size_t len;      /**< Length of the string in bytes */
     } StringView;
@@ -136,7 +136,7 @@ extern "C" {
      *
      * Manages a buffer with length and capacity. Can append characters, C strings, and StringViews.
      */
-    typedef struct {
+    typedef struct StringBuilder {
         char *data;      /**< Pointer to the buffer */
         size_t length;   /**< Current length of the string */
         size_t capacity; /**< Total allocated capacity */

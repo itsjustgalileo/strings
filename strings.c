@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "./strings.h"
+#include "strings.h"
 
 /***************
  * STRING VIEW *
@@ -126,7 +126,9 @@ void string_builder_clear(StringBuilder *sb)
 static bool string_builder_ensure_capacity(StringBuilder *sb, size_t needed)
 {
     assert(sb);
-    if (needed <= sb->capacity) return true;
+    if (needed <= sb->capacity) {
+        return true;
+    }
 
     size_t new_capacity = sb->capacity ? sb->capacity * 2 : 16;
     while (new_capacity < needed) {
@@ -183,38 +185,43 @@ bool string_builder_append_view(StringBuilder *sb, const StringView *sv)
 
 bool string_builder_read_entire_file(StringBuilder *sb, const char *filepath)
 {
-    FILE *fp = fopen(filepath, "r");
+    assert(sb && filepath);
+
+    FILE *fp = fopen(filepath, "rb");
     if (NULL == fp) {
-        return false;  
+        return false;
     }
 
-    fseek(fp, 0, SEEK_END);
-    long len = ftell(fp);
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        return false;
+    }
+
+    long file_size = ftell(fp);
+    if (file_size < 0) {
+        fclose(fp);
+        return false;
+    }
+
     rewind(fp);
 
-    if (len <= 0) {
+    size_t len = (size_t)file_size;
+
+    /* Ensuring space once: existing length + file + null */
+    if (!string_builder_ensure_capacity(sb, sb->length + len + 1)) {
         fclose(fp);
         return false;
     }
 
-    char *buffer = malloc(len + 1);
-    if (NULL == buffer) {
+    size_t read = fread(sb->data + sb->length, 1, len, fp);
+    if (read != len) {
         fclose(fp);
         return false;
     }
 
-    fread(buffer, 1, len, fp);
-    buffer[len] = '\0';
+    sb->length += len;
+    sb->data[sb->length] = '\0';
 
-    bool ok = string_builder_append_cstr(sb, buffer);
-    if (!ok) {
-        free(buffer);
-        fclose(fp);
-        return false;
-    }
-    
-    free(buffer);
     fclose(fp);
-
-    return ok;
+    return true;
 }
