@@ -1,62 +1,91 @@
-#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
-#include "strings.h"
+#include "strings/strings.h"
 
 /***************
  * STRING VIEW *
  ***************/
 
-bool string_view_from_cstr(StringView *sv, const char *str)
+StringView string_view_from_cstr(const char *str)
 {
-    assert(sv && str);
-    sv->str = str;
-    sv->len = strlen(str);
-    return true;
-}
+    StringView sv = {0};
 
-bool string_view_from_range(StringView *sv, const char *str, size_t len)
-{
-    assert(sv && str);
-    sv->str = str;
-    sv->len = (size_t) len;
-    return true;
-}
-
-bool string_view_from_span(StringView *sv, const char *start, const char *end)
-{
-    assert(sv && start && end);
-    if (start > end) {
-        return false;
+    if (NULL == str) {
+        return sv;
     }
-    sv->str = start;
-    sv->len = (size_t)(end - start);
-    return true;
+
+    sv.str = str;
+    sv.len = strlen(str);
+    return sv;
+}
+
+StringView string_view_from_range(const char *str, size_t len)
+{
+    StringView sv = {0};
+
+    if (NULL == str) {
+        return sv;
+    }
+
+    sv.str = str;
+    sv.len = (size_t) len;
+    return sv;
+}
+
+StringView string_view_from_span(const char *start, const char *end)
+{
+    StringView sv = {0};
+    
+    if (NULL == start || NULL == end) {
+        return sv;
+    }
+
+    if (start > end) {
+        return sv;
+    }
+
+    sv.str = start;
+    sv.len = (size_t)(end - start);
+    return sv;
 }
 
 bool string_view_equals(const StringView *a, const StringView *b)
 {
-    assert(a && b);
+    if (NULL == a || NULL == b) {
+        return false;
+    }
+
     if (a->len != b->len) {
         return false;
     }
     return strncmp(a->str, b->str, a->len) == 0;
 }
 
-bool string_view_slice(const StringView *sv, size_t start, size_t end, StringView *out)
+StringView string_view_slice(const StringView *sv, size_t start, size_t end)
 {
-    assert(sv && out);
-    if (start > end || end > sv->len) return false;
-    out->str = sv->str + start;
-    out->len = end - start;
-    return true;
+    StringView out = {0};
+
+    if (NULL == sv) {
+        return out;
+    }
+
+    if (start > end || end > sv->len) {
+        return out;
+    }
+
+    out.str = sv->str + start;
+    out.len = end - start;
+    return out;
 }
 
 bool string_view_starts_with(const StringView *sv, const char *prefix)
 {
-    assert(sv && prefix);
+    if (NULL == sv || NULL == prefix) {
+        return false;
+    }
+
     size_t prefix_len = strlen(prefix);
     if (sv->len < prefix_len) {        
         return false;
@@ -66,7 +95,10 @@ bool string_view_starts_with(const StringView *sv, const char *prefix)
 
 bool string_view_ends_with(const StringView *sv, const char *suffix)
 {
-    assert(sv && suffix);
+    if (NULL == sv || NULL == suffix) {
+        return false;
+    }
+    
     size_t suffix_len = strlen(suffix);
     if (suffix_len > sv->len) {        
         return false;
@@ -76,7 +108,10 @@ bool string_view_ends_with(const StringView *sv, const char *suffix)
 
 bool string_view_find(const StringView *sv, char c, size_t *index)
 {
-    assert(sv && index);
+    if (NULL == sv || NULL == index) {
+        return false;
+    }
+    
     for (*index = 0; *index < sv->len; ++(*index)) {
         if (sv->str[*index] == c) {
             return true;
@@ -87,7 +122,10 @@ bool string_view_find(const StringView *sv, char c, size_t *index)
 
 bool string_view_trim_left(StringView *sv)
 {
-    assert(sv);
+    if (NULL == sv) {
+        return false;
+    }
+    
     size_t i = 0;
     while (i < sv->len && isspace((unsigned char)sv->str[i])) {
         i++;
@@ -99,7 +137,10 @@ bool string_view_trim_left(StringView *sv)
 
 bool string_view_trim_right(StringView *sv)
 {
-    assert(sv);
+    if (NULL == sv) {
+        return false;
+    }
+    
     while (sv->len > 0 && isspace((unsigned char)sv->str[sv->len - 1])) {
         sv->len--;
     }
@@ -108,7 +149,10 @@ bool string_view_trim_right(StringView *sv)
 
 bool string_view_trim(StringView *sv)
 {
-    assert(sv);
+    if(NULL == sv) {
+        return false;
+    }
+    
     return string_view_trim_left(sv) && string_view_trim_right(sv);
 }
 
@@ -118,14 +162,30 @@ bool string_view_trim(StringView *sv)
 
 void string_builder_clear(StringBuilder *sb)
 {
-    assert(sb);
+    if (NULL == sb) {
+        return;
+    }
+
     sb->length = 0;
+    return;
+}
+
+void string_builder_free(StringBuilder *sb)
+{
+    if (NULL == sb) {
+        return;
+    }
+
+    free(sb->data);
     return;
 }
 
 static bool string_builder_ensure_capacity(StringBuilder *sb, size_t needed)
 {
-    assert(sb);
+    if (NULL == sb) {
+        return false;
+    }
+    
     if (needed <= sb->capacity) {
         return true;
     }
@@ -147,7 +207,10 @@ static bool string_builder_ensure_capacity(StringBuilder *sb, size_t needed)
 
 bool string_builder_append_char(StringBuilder *sb, char c)
 {
-    assert(sb);
+    if (NULL == sb) {
+        return false;
+    }
+
     if (!string_builder_ensure_capacity(sb, sb->length + 2)) {
         return false;
     }
@@ -160,7 +223,10 @@ bool string_builder_append_char(StringBuilder *sb, char c)
 
 bool string_builder_append_cstr(StringBuilder *sb, const char *str)
 {
-    assert(sb && str);
+    if (NULL == sb || NULL == str) {
+        return false;
+    }
+
     size_t str_len = strlen(str);
     if (!string_builder_ensure_capacity(sb, sb->length + str_len + 1)) {
         return false;
@@ -173,7 +239,10 @@ bool string_builder_append_cstr(StringBuilder *sb, const char *str)
 
 bool string_builder_append_view(StringBuilder *sb, const StringView *sv)
 {
-    assert(sb && sv);
+    if (NULL == sb || NULL == sv) {
+        return false;
+    }
+    
     if (!string_builder_ensure_capacity(sb, sb->length + sv->len + 1)) {
         return false;
     }
@@ -185,7 +254,10 @@ bool string_builder_append_view(StringBuilder *sb, const StringView *sv)
 
 bool string_builder_read_entire_file(StringBuilder *sb, const char *filepath)
 {
-    assert(sb && filepath);
+    if (NULL == sb || NULL == filepath) {
+        return false;
+    }
+
 
     FILE *fp = fopen(filepath, "rb");
     if (NULL == fp) {
@@ -207,7 +279,6 @@ bool string_builder_read_entire_file(StringBuilder *sb, const char *filepath)
 
     size_t len = (size_t)file_size;
 
-    /* Ensuring space once: existing length + file + null */
     if (!string_builder_ensure_capacity(sb, sb->length + len + 1)) {
         fclose(fp);
         return false;

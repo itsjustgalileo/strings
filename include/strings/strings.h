@@ -19,6 +19,18 @@ extern "C" {
         size_t len;      /**< Length of the string in bytes */
     } StringView;
 
+#define SV(str) string_view_from_range(str, sizeof(str) - 1)
+#define SV_STATIC(str) \
+    {                                              \
+        (str),                                     \
+        sizeof(str) - 1,                           \
+    }
+
+#define SV_NULL string_view_from_range(NULL, 0)
+    
+#define SV_FMT "%.*s"
+#define SV_ARG(sv) (int)(sv.len), (sv).str
+    
     /**
      * @brief Initialize a StringView from a null-terminated C string.
      *
@@ -27,7 +39,7 @@ extern "C" {
      *
      * @return true on success, false on failure.
      */
-    extern bool string_view_from_cstr(StringView *sv, const char *str);
+    extern StringView string_view_from_cstr(const char *str);
 
     /**
      * @brief Initialize a StringView from a character array and length.
@@ -38,7 +50,7 @@ extern "C" {
      *
      * @return true on success, false on failure.
      */
-    extern bool string_view_from_range(StringView *sv, const char *str, size_t len);
+    extern StringView string_view_from_range(const char *str, size_t len);
 
     /**
      * @brief Initialize a StringView from a start and end pointer.
@@ -49,7 +61,7 @@ extern "C" {
      *
      * @return true on success, false if start > end.
      */
-    extern bool string_view_from_span(StringView *sv, const char *start, const char *end);
+    extern StringView string_view_from_span(const char *start, const char *end);
 
     /**
      * @brief Check if two StringViews are equal.
@@ -71,7 +83,7 @@ extern "C" {
      *
      * @return true on success, false if indices are invalid.
      */
-    extern bool string_view_slice(const StringView *sv, size_t start, size_t end, StringView *out);
+    extern StringView string_view_slice(const StringView *sv, size_t start, size_t end);
 
     /**
      * @brief Check if a StringView starts with a given prefix.
@@ -149,6 +161,13 @@ extern "C" {
      */
     void string_builder_clear(StringBuilder *sb);
 
+    /**
+     * @brief Frees a string builder after use.
+     *
+     * @param sb The string builder to free.
+     */
+    void string_builder_free(StringBuilder *sb);
+    
     /**
      * @brief Append a single character to the StringBuilder.
      *
